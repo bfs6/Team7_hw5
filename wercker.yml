@@ -1,0 +1,42 @@
+box: rocker/hadleyverse
+
+build:
+  steps:
+    - script:
+      name: Install libraries
+      code: |
+        printf "deb http://httpredir.debian.org/debian testing main\ndeb http://httpredir.debian.org/debian testing-updates main\ndeb http://security.debian.org testing/updates main\ndeb-src http://http.debian.net/debian testing main\n" > /etc/apt/sources.list
+        apt-get update
+        apt-get install -y --no-install-recommends curl libgdal-dev libgeos-dev libproj-dev
+    - script:
+      name: Install packages
+      code: |
+        Rscript -e "install.packages(c('jsonlite','rgdal','rgeos'), repos='https://cran.rstudio.com')"
+    - script: 
+      name: Get scores
+      code: |
+        curl -s "$PP" > pp.Rdata
+        curl -s "https://api.orchestrate.io/v0/hw5/Team0"  -u "$ORCH:" > Team0.json
+        curl -s "https://api.orchestrate.io/v0/hw5/Team1"  -u "$ORCH:" > Team1.json
+        curl -s "https://api.orchestrate.io/v0/hw5/Team2"  -u "$ORCH:" > Team2.json
+        curl -s "https://api.orchestrate.io/v0/hw5/Team3"  -u "$ORCH:" > Team3.json
+        curl -s "https://api.orchestrate.io/v0/hw5/Team4"  -u "$ORCH:" > Team4.json
+        curl -s "https://api.orchestrate.io/v0/hw5/Team5"  -u "$ORCH:" > Team5.json
+        curl -s "https://api.orchestrate.io/v0/hw5/Team6"  -u "$ORCH:" > Team6.json
+        curl -s "https://api.orchestrate.io/v0/hw5/Team7"  -u "$ORCH:" > Team7.json
+        curl -s "https://api.orchestrate.io/v0/hw5/Team8"  -u "$ORCH:" > Team8.json
+        curl -s "https://api.orchestrate.io/v0/hw5/Team9"  -u "$ORCH:" > Team9.json
+        curl -s "https://api.orchestrate.io/v0/hw5/Team10" -u "$ORCH:" > Team10.json
+    - script:
+      name: Update scores
+      code: |
+          Rscript -e "source('https://raw.githubusercontent.com/Sta323-Sp16/Homework/master/hw5/update_score.R')" $TEAM
+          curl -s "https://api.orchestrate.io/v0/hw5/$TEAM" \
+            -XPUT \
+            -H "Content-Type: application/json" \
+            -u "$ORCH:" \
+            -d "@$TEAM.json"
+    - script:
+      name: Show Leaderboard
+      code: |
+        Rscript -e "source('https://raw.githubusercontent.com/Sta323-Sp16/Homework/master/hw5/leaderboard.R')"
