@@ -42,7 +42,7 @@ nyc_addr$address <- nyc_addr$address %>%
 precincts = inner_join(nyc_addr, pluto)
 
 
-good_precincts = c(1,5,6,7,9,10,13,14,17,18,19,20,22,
+good_precincts = c(1,5,6,7,9,10,13,14,17,18,19,20,
                    23,24,25,26,28,30,32,33,34)
 
 d = precincts %>% filter(precinct %in% good_precincts)
