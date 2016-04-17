@@ -36,7 +36,7 @@ nyc_addr$address <- nyc_addr$address %>%
   str_replace("bway","broadway") %>%
   str_replace("west","w") %>%
   str_replace("east","e") %>%
-  str_replace("steet","st") %>%
+  str_replace("street","st") %>%
   str_replace("pl","place")
 
 precincts = inner_join(nyc_addr, pluto)
