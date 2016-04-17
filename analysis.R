@@ -70,91 +70,27 @@ legend("topleft",legend=as.character(good_precincts), pch=16, col=colors,
 ## Manhattan Bounday
 
 #these are both basic spatial data managing pckages
-install.packages("rgdal",dependencies = TRUE)
+## Manhattan Bounday
+
 library(rgdal)
-install.packages("raster")
 library(raster)
 
 bb = readOGR("/data/Sta323/nyc_parking/nybb/","nybb")
 manh = bb[bb$BoroName == "Manhattan",]
 
 r = raster()
-extent(r) = bbox(manh) #bbox gives a rectangular boundary of the shape
-#get the number of rows, columns, and layers (raster doesn't do mixed layers)
+extent(r) = bbox(manh)
 dim(r) = c(1000,200)
 
-#create a raster with all the objecgts in it
 r = rasterize(manh, r)
 
-#accessing the actual contents of the rasters
-#r[] ---> this would give you a vector
-#accessign the nth cell in that cell
-#xyFromCell(r,1)
 
-#array type things
-plot(r)
-plot(r, asp=0)
-#see the white space in here? they correspond to the NA values in r[]
-
-
-
-## Modeling - Logistic Regression
-#start with predicitng one precint
-pdata = data.frame(p = (d$precinct == 1), x = d$x, y = d$y)
-
-#set family to binomial--->logistic regression
-l = glm(p~poly(x,2)*poly(y,2), data=pdata, family=binomial)
-
-#get the non NA values
 pred_cells = which(r[] != 0)
 pred_locs = xyFromCell(r,pred_cells) %>% as.data.frame()
-
-pred = r
-pred[pred_cells] = predict(l, newdata=pred_locs, type="response")
-plot(pred, asp=0)
-
-
-
-
-## Modeling - Logistic Regression across Precinct
-pred_cells = which(r[] != 0)
-pred_locs = xyFromCell(r,pred_cells) %>% as.data.frame()
-
-res = list()
-for(i in seq_along(good_precincts))
-{
-  pdata = data.frame(p = (d$precinct == good_precincts[i]), x = d$x, y = d$y)
-  
-  l = glm(p~poly(x,2)*poly(y,2), data=pdata, family=binomial)
-  res[[i]] = predict(l, newdata=pred_locs, type="response")
-}
-
-#get probability matrix
-probs = do.call(cbind, res)
-#seep each row and pick out the largest values, each location coordinate has 22 probabilities
-#one for each precinct, pick the precint that has the largest probability
-pred_prec = good_precincts[apply(probs, 1, which.max)]
-
-#make a copy of r and store results in hte copy not the original file, just to make sure nothing wierd happens there
-pred_mlr = r
-#how come the pred_prec values are soooo big?
-pred_mlr[pred_cells] = pred_prec
-plot(pred_mlr, asp=0)
-
-
-## Modeling - Multinomial
-##multi class identification----searches
-library(nnet)
-
-l = multinom(precinct~poly(x,2)*poly(y,2), data=d)
-
-pred_mr = r
-pred_mr[pred_cells] = predict(l, newdata=pred_locs)
-plot(pred_mr, asp=0)
 
 
 ## Modeling - xgboost
-install.packages("xgboost")
+
 library(xgboost)
 
 xg_data = as.matrix(d[,c("x","y")])
@@ -162,7 +98,6 @@ xg_label = as.matrix(d[,"precinct"]) %>%
   as.factor() %>% 
   as.numeric() - 1
 
-#softmax, doing a multinomial regression and picking one that has the largest value
 l = xgboost(data=xg_data, label=xg_label, 
             objective="multi:softmax",num_class=length(good_precincts),
             nrounds=20)
@@ -170,31 +105,19 @@ l = xgboost(data=xg_data, label=xg_label,
 p = predict(l, newdata=as.matrix(pred_locs))
 pred_lab = good_precincts[p+1]
 
-
 pred_xg = r
 pred_xg[pred_cells] = pred_lab
 plot(pred_xg, asp=0)
 
 
-## Modeling - SVM
-#take data, fold in a high dimensional space, cut it
-#essentially everything in here is multiple logistic regression
-library(e1071)
 
-s = svm(as.factor(precinct)~x+y, data=d)
+## Model output
+library(rgeos)
 
-pred_svm = r
-pred_svm[pred_cells] = predict(s, newdata=pred_loc)
-plot(pred_svm,asp=0)
+poly = rasterToPolygons(pred_xg, dissolve = TRUE)
+names(poly) = "Precinct"
 
+source("https://raw.githubusercontent.com/Sta323-Sp16/Homework/master/hw5/write_geojson.R")
 
-#writing GEOJSON
-d.df<-as.data.frame(d)
-
-precinct.sp<-SpatialPointsDataFrame(d.df[,c(3,4)],d.df[,c(3,4)])
-writeOGR(precinct.sp,'precinct.geojson','d.df',driver='GeoJSON',check_exists = FALSE)
-
-library(RJSONIO)
-precinct.json<-toJSON(d.df, pretty=TRUE)
-
-#how does the precinct.json file look like
+write_geojson(poly, "precincts.json")
+plot(poly)
