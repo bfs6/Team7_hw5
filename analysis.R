@@ -49,15 +49,15 @@ lat = 40.7829
 n= 5000
 
 cplatitude = runif(n, min=lat-0.01, max =lat + 0.01)
-cplongitude = runif(n, min=long-0.01, max =long+0.01)
+cplongitude = runif(n, min=long-0.008, max =long+0.008)
 #now make it into a rectangular shape
 
 rectanglelat = rep(NA, n)
 rectanglelong = rep(NA, n)
-for(i in 1:length(cplatitude)){
-  rectanglelat[i] = lat  + (cplatitude[i]-lat)*cos(0.8) + (cplongitude[i]-long)*sin(0.8)
-  rectanglelong[i] = long  + (cplatitude[i]-lat)*sin(0.8) + (cplongitude[i]-long)*cos(0.8)
-}
+
+rectanglelat = lat  + (cplatitude-lat)*0.2 - (cplongitude-long)*0.8
+rectanglelong = long  + (cplatitude-lat)*0.8 + (cplongitude-long)*0.2
+
 
 
 cpprecinct = rep(22L, n)
