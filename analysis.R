@@ -1,12 +1,12 @@
+
 library(dplyr)
-library(truncnorm)
+
 library(readr)
 library(stringr)
-library(tidyr)
+
 load('/data/Sta323/nyc_parking/pluto_data.Rdata')
-nyccopy = read_csv("/data/Sta323/nyc_parking/NYParkingViolations.csv")
-alternatives=read_csv("/data/Sta323/nyc_parking/altnames.csv")
-nyc=nyccopy
+nyc = read_csv("/data/Sta323/nyc_parking/NYParkingViolations.csv")
+
 names(nyc) = make.names(names(nyc))
 
 nyc_addr = nyc %>%
@@ -19,87 +19,51 @@ pluto = pluto_data %>%
   rename(x=longitude,y=latitude)
 
 pluto$address<-pluto$address %>% 
-  str_replace(" pkwy"," parkway") %>%
-  str_replace(" bway"," broadway") %>%
-  str_replace(" blvd"," bl") %>%
-  str_replace(" west", " w") %>%
-  str_replace(" east"," e") %>%
-  str_replace(" street"," st") %>%
-  str_replace(" place"," pl") %>%
-  str_replace(" avenue"," ave") %>%
-  str_replace("([0-9*?])st", "\\1") %>% 
-  str_replace("([0-9*?])nd", "\\1") %>% 
-  str_replace("([0-9*?])rd", "\\1") %>% 
-  str_replace("([0-9*?])th", "\\1")
+  str_replace("west","w") %>%
+  str_replace("east","e") %>%
+  str_replace("avenue","ave") %>%
+  str_replace("street","st") %>%
+  str_replace("bl","blvd") %>%
+  str_replace("drive","dr")
 
 nyc_addr$address <- nyc_addr$address %>%
-  
-  str_replace(" pkwy"," parkway") %>%
-  str_replace(" bway"," broadway") %>%
-  str_replace(" blvd"," bl") %>%
-  str_replace(" west", " w") %>%
-  str_replace(" east"," e") %>%
-  str_replace(" street"," st") %>%
-  str_replace(" place"," pl") %>%
-  str_replace(" avenue"," ave") %>%
-  str_replace("([0-9*?])st", "\\1") %>% 
-  str_replace("([0-9*?])nd", "\\1") %>% 
-  str_replace("([0-9*?])rd", "\\1") %>% 
-  str_replace("([0-9*?])th", "\\1")
-
-
+  str_replace("str","st") %>%
+  str_replace("pkwy","parkway") %>%
+  str_replace("bway","broadway") %>%
+  str_replace("west","w") %>%
+  str_replace("east","e") %>%
+  str_replace("street","st") %>%
+  str_replace("pl","place")
 
 precincts = inner_join(nyc_addr, pluto)
 
+
+
+
 #central park
-long=mean(precincts$x[precincts$precinct == 22])
-lat = mean(precincts$y[precincts$precinct == 22])
+long=-73.9654
+lat = 40.7829
 
-R = 3959
-to_Radian <- function(x){
-  return(x*pi/180)
-}
-harversine <- function(x1,y1,x2,y2){
-  x1<-to_Radian(x1)
-  x2<-to_Radian(x2)
-  y1<-to_Radian(y1)
-  y2<-to_Radian(y2)
-  
-  dx = x2-x1
-  dy = y2-y1
-  a = (sin(dx/2))^2 + cos(x1)*cos(x2)*(sin(dy/2))^2
-  c = 2*atan2(sqrt(a),sqrt(1-a))
-  d = R*c
-  return(d)
-}
 
-a=c()
-for(i in seq(0.00, 0.05, by=0.001)){
-  a=c(a, harversine(lat, long, lat+i, long+i))
-}
-#looks like 3 miles is about 0.08 decimals of lat above the mean and below the mean. while 0.5 miles is about 0.004 decimals of longitude. 
-
-#Central park is about 3 mile long and 0.5 miles wide. WE can use the harversine formula above to calulate the range
 
 n= 5000
 
-cplatitude = rtruncnorm(n, a=lat-0.02, b =lat + 0.02, mean=lat, sd=0.01)
-cplongitude = rtruncnorm(n, a=long-0.001, b =long+0.001, mean=long, sd=0.004)
-#now make it into a rectangular shap. 
+cplatitude = runif(n, min=lat-0.01, max =lat + 0.01)
+cplongitude = runif(n, min=long-0.01, max =long+0.01)
+#now make it into a rectangular shape
 
 rectanglelat = rep(NA, n)
 rectanglelong = rep(NA, n)
-
 for(i in 1:length(cplatitude)){
-  rectanglelat[i] = lat  + (cplatitude[i]-lat) + (cplongitude[i]-long)
-  rectanglelong[i] = long  + (cplatitude[i]-lat) + (cplongitude[i]-long)
+  rectanglelat[i] = lat  + (cplatitude[i]-lat)*cos(0.8) + (cplongitude[i]-long)*sin(0.8)
+  rectanglelong[i] = long  + (cplatitude[i]-lat)*sin(0.8) + (cplongitude[i]-long)*cos(0.8)
 }
 
 
 cpprecinct = rep(22L, n)
 cpaddress = rep(NA, n)
 
-centralpark = data.frame(precinct = cpprecinct, address = cpaddress, x = cplong2 , y = cplat2)
+centralpark = data.frame(precinct = cpprecinct, address = cpaddress, x = rectanglelong , y = rectanglelat)
 
 precincts = rbind(precincts, centralpark)
 
@@ -159,7 +123,7 @@ xg_label = as.matrix(d[,"precinct"]) %>%
 
 l = xgboost(data=xg_data, label=xg_label, 
             objective="multi:softmax",num_class=length(good_precincts),
-            nrounds=20)
+            nrounds=20, nfold=10)
 
 p = predict(l, newdata=as.matrix(pred_locs))
 pred_lab = good_precincts[p+1]
