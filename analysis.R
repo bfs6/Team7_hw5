@@ -2,15 +2,15 @@
 
 ## Merge Data
 
-library(plyr)
+
 library(dplyr)
 
 library(readr)
 library(stringr)
-
+library(tidyr)
 load('/data/Sta323/nyc_parking/pluto_data.Rdata')
 nyc = read_csv("/data/Sta323/nyc_parking/NYParkingViolations.csv")
-
+alternatives=read_csv("/data/Sta323/nyc_parking/altnames.csv")
 names(nyc) = make.names(names(nyc))
 
 nyc_addr = nyc %>%
@@ -23,24 +23,38 @@ pluto = pluto_data %>%
   rename(x=longitude,y=latitude)
 
 pluto$address<-pluto$address %>% 
-  str_replace("west","w") %>%
-  str_replace("east","e") %>%
-  str_replace("avenue","ave") %>%
-  str_replace("street","st") %>%
-  str_replace("bl","blvd") %>%
-  str_replace("drive","dr")
-
-nyc_addr$address <- nyc_addr$address %>%
-  str_replace("str","st") %>%
   str_replace("pkwy","parkway") %>%
   str_replace("bway","broadway") %>%
+  str_replace("blvd","bl") %>%
   str_replace("west","w") %>%
   str_replace("east","e") %>%
   str_replace("street","st") %>%
-  str_replace("pl","place")
+  str_replace("place","pl") %>%
+  str_replace("avenue","ave") %>%
+  str_replace("([0-9*?])st", "\\1") %>% 
+  str_replace("([0-9*?])nd", "\\1") %>% 
+  str_replace("([0-9*?])rd", "\\1") %>% 
+  str_replace("([0-9*?])th", "\\1")
+
+nyc_addr$address <- nyc_addr$address %>%
+  
+  str_replace("pkwy","parkway") %>%
+  str_replace("bway","broadway") %>%
+  str_replace("blvd","bl") %>%
+  str_replace("west","w") %>%
+  str_replace("east","e") %>%
+  str_replace("street","st") %>%
+  str_replace("place","pl") %>%
+  str_replace("avenue","ave") %>%
+  str_replace("([0-9*?])st", "\\1") %>% 
+  str_replace("([0-9*?])nd", "\\1") %>% 
+  str_replace("([0-9*?])rd", "\\1") %>% 
+  str_replace("([0-9*?])th", "\\1")
+
+
 
 precincts = inner_join(nyc_addr, pluto)
-precincts_rep = outer_join(nyc_addr, pluto)
+
 ## Visualizing Precincts
 
 ##actual precinct numbers in Manhattan
@@ -100,7 +114,7 @@ xg_label = as.matrix(d[,"precinct"]) %>%
 
 l = xgboost(data=xg_data, label=xg_label, 
             objective="multi:softmax",num_class=length(good_precincts),
-            nrounds=20)
+            nrounds=20, )
 
 p = predict(l, newdata=as.matrix(pred_locs))
 pred_lab = good_precincts[p+1]
@@ -110,9 +124,6 @@ pred_xg[pred_cells] = pred_lab
 plot(pred_xg, asp=0)
 
 
-
-## Model output
-library(rgeos)
 
 poly = rasterToPolygons(pred_xg, dissolve = TRUE)
 names(poly) = "Precinct"
