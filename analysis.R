@@ -128,7 +128,7 @@ xg_label = as.matrix(d[,"precinct"]) %>%
 
 l = xgboost(data=xg_data, label=xg_label, 
             objective="multi:softmax",num_class=length(good_precincts),
-            nrounds=20, nfold=10)
+            nrounds=20, nfold=5)
 
 p = predict(l, newdata=as.matrix(pred_locs))
 pred_lab = good_precincts[p+1]
