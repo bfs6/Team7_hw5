@@ -19,21 +19,26 @@ pluto = pluto_data %>%
   rename(x=longitude,y=latitude)
 
 pluto$address<-pluto$address %>% 
-  str_replace("west","w") %>%
-  str_replace("east","e") %>%
-  str_replace("avenue","ave") %>%
-  str_replace("street","st") %>%
-  str_replace("bl","blvd") %>%
-  str_replace("drive","dr")
+  str_replace(" west"," w") %>%
+  str_replace(" east"," e") %>%
+  str_replace(" avenue"," ave") %>%
+  str_replace(" street"," st") %>%
+  str_replace(" blvd"," bl") %>%
+  str_replace(" drive"," dr")%>%
+  str_replace(" place"," pl") %>%
+  str_replace(" pkwy"," parkway") %>%
+  str_replace(" bway"," broadway")
 
-nyc_addr$address <- nyc_addr$address %>%
-  str_replace("str","st") %>%
-  str_replace("pkwy","parkway") %>%
-  str_replace("bway","broadway") %>%
-  str_replace("west","w") %>%
-  str_replace("east","e") %>%
-  str_replace("street","st") %>%
-  str_replace("pl","place")
+nyc_addr$address <- nyc_addr$address %>% 
+  str_replace(" west"," w") %>%
+  str_replace(" east"," e") %>%
+  str_replace(" avenue"," ave") %>%
+  str_replace(" street"," st") %>%
+  str_replace(" blvd"," bl") %>%
+  str_replace(" drive"," dr")%>%
+  str_replace(" place"," pl") %>%
+  str_replace(" pkwy"," parkway") %>%
+  str_replace(" bway"," broadway")
 
 precincts = inner_join(nyc_addr, pluto)
 
@@ -47,16 +52,16 @@ lat = 40.7829
 
 
 n= 5000
-
+#sample some points
 cplatitude = runif(n, min=lat-0.01, max =lat + 0.01)
-cplongitude = runif(n, min=long-0.008, max =long+0.008)
-#now make it into a rectangular shape
+cplongitude = runif(n, min=long-0.006, max =long+0.006)
+#now make it into a rectangular shape to fit the parallelogram
 
 rectanglelat = rep(NA, n)
 rectanglelong = rep(NA, n)
 
-rectanglelat = lat  + (cplatitude-lat)*0.2 - (cplongitude-long)*0.8
-rectanglelong = long  + (cplatitude-lat)*0.8 + (cplongitude-long)*0.2
+rectanglelat = lat  + (cplatitude-lat)*0.4 - (cplongitude-long)*0.6
+rectanglelong = long  + (cplatitude-lat)*0.4 + (cplongitude-long)*0.6
 
 
 
