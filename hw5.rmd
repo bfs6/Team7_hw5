@@ -1,25 +1,27 @@
 ---
 title: "hw5"
-author: "Justin Wang"
-date: "4/17/2016"
 output: html_document
 ---
 
+#Task 1
+First, we loaded the Pluto data and NY Parking violations data. In using make.names, we made the character vector names of the nyc data frame syntactically correct. We then used pipes in order and the select, transmute, and filter functions to make nyc_addr a data frame consisting of the precincts from 1-34 and the addresses, which entailed pasting the house numbers and street names from the nyc data frame. 
 
-## Task1
+We then made a pluto dataframe with 3 columns: addresses, latitude, and longitude. After that, we used pipes to clean the data and replace parts of the address names with abbreviations for both the nyc_addr and pluto data frames.
 
-The nyc csv file had data with various ways to name the streets, drives, avenues and etc. In order to make things consistent, I turned everything to lower case and then I replaced all addresses to be consistent with the pluto data. This would ensure a maximal join. My joined file consisted of 592336 addresses( latitudes and longtitudes) which should be sufficient to model the precincts. 
+We used the innerjoin function to combine these two data frames into a data frame called precincts. 
+
+The nyc csv file had data with various ways to name the streets, drives, avenues and etc. In order to make things consistent, we turned everything to lower case and then replaced all addresses to be consistent with the pluto data. This would ensure a maximal join. Our joined file consisted of 592336 addresses( latitudes and longtitudes) which should be sufficient to model the precincts.
+
+#Task 2
+
+In order to better our prediction, we realized we had to inpute data for central park. Central Park only consisted of 90 addresses from the Pluto data. Thus it would confound with our prediction. To inpute central park, we first sampled a uniform distribution of 5000 points within a small range of latitude and longitude coordinates that are similar with the size of central park. Because central park isn't completely aligned with the longitude and latitude lines, we had to tranform the transformed area to fit the precinct.
+
+In visualizing the precincts, we filtered our precincts data frame to show only the precincts within our good precincts list. This new data frame, we named d. Furthermore, using the sample and color functions, we assigned a range of increasingly dark colors to the precincts by number. We then plotted all of the points in d, based on latitude, longitude, and color. 
+
+In order to set the Manhattan boundaries, we loaded the nybb data and used it to get the data for Manhattan specifically. We then rasterized this data, converting it into pixels that can be displayed. 
+
+Then we incorporated an xgboost predictor mainly becuase it was the fastest predictor and got error rates of 10% after 20 iterations. 
 
 
-## Task2
-In order to better our prediction, I realized i had to inpute data for central park. Central Park only consisted of 90 addresses from the Pluto data. Thus it would confound with our prediction. To inpute central park, I first sampled a uniform distribution of 5000 points within a small range of latitude and longitude coordinates that are similar with the size of central park. becuase central park isn't completely aligned with the longitude and latitude lines, I had to tranform the transformed area to fit the precinct.
-
-Then i incorporated an xgboost predictor mainly becuase it was the fastest predictor and got error rates of 10% after 20 iterations. 
-
-The following is the plot of my prediction. 
-
-
-```{r}
-!["prediction"](Rplot.jpeg)
-```
+the plot of the prediction is also in our repository
 
